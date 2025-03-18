@@ -225,16 +225,26 @@ When I implemented this new algorithm, the cool thing about what happened with t
 
 Once this was implemented, I would then map out the losses per iteration for each member of the population in each generation. What determined whether they would continue to the next generation was two parameters: Final Performance and Improvement. Final performance was defined as the performance of a given cell in terms of their loss function. While this makes sense as a valid parameter to designate keeping a species into the next generation, there was one piece of information that was missing. If an organism simply performed well enough in the given generation, but didn’t learn anything, then I felt that we would be missing out on important information from the other members of the population. These cells could be designated as those that had a flat, or closely flat line on their loss function. That is why I introduced our second parameter, Improvement. Improvement was essentially defined as how well the cell learned over the iterations. We would take the differences in the losses from the final iteration to the last iteration. Once that was defined, we would then take the top two performers in each of those two categories. If we were to have duplicates that showed up in both, then we would eliminate the duplicate and retain the distinct members. These would then go on to become the parents of the following generation. 
 Once the parents of the generation were determined, we implemented a way to perform the mutations. We would have two to four members of the original population go on to become the parents of the following population. To fill out the remaining population size, we would take our survivors, randomly take a parameter that we specified in the table above and alter it randomly. The alteration had to be tuned essentially, because I didn’t want the parameter to be too drastic of a change. Along with that, I didn’t want the change to be too small as it would also cause a drastic bias towards the parent. To properly change the parameters, I implemented the following steps. 
+
 def mutate_params(params):
     mutated = params.copy()
-    key = random.choice(['body_radius', 'pad_radius', 'num_arms', 'arm_length', 'arm_width', 'weld_length', 'muscle_count'])
-    if key in ['num_arms', 'muscle_count']:
-        mutated[key] += random.choice([-3,-2,-1, 1,2,3])
-        mutated[key] = max(1, mutated[key])
-        mutated[key] = min(4, mutated[key])
-    else:
-        # Adjust the continuous parameters by a small random amount.
-        mutated[key] = abs(mutated[key] + random.gauss(0, 0.05))
+    keys = ['body_radius', 'pad_radius', 'num_arms', 'arm_length', 'arm_width']
+    
+    # Choose 3 distinct keys randomly
+    selected_keys = random.sample(keys, 3)
+    
+    for key in selected_keys:
+        if key in ['num_arms']:
+            # Mutate integer parameters
+            mutated[key] += random.choice([-3, -2, -1, 1, 2, 3])
+            mutated[key] = max(1, mutated[key])
+            mutated[key] = min(3, mutated[key])
+        else:
+            # Mutate continuous parameters by adding a small random change
+            mutation = random.gauss(0, 0.005)  # Small change centered at 0
+            mutated[key] += mutation
+            mutated[key] = abs(mutated[key])  # Ensure positive values
+            mutated[key] = max(0.008, mutated[key])
     return mutated
 
 There are two instances in which we would want to alter the parameters. The first instance is if we needed to ensure that it was positive integer in the case of num_arms and muscle_count. We essentially added or subtracted a random integer by our chosen parameter. We also still had to ensure that it was within the bounds that we chose. The second instance was to add a value from a normal bell curve that was centered around zero. We chose a value of 0.05 as the standard deviation as that gave us the favorable changes that were not too drastic while still exhibiting a fair difference. This algorithm for implementing a mutation allowed to vary different parameters and see what features helped in creating the locomotion of this creature. The main code will be shown below in the supplementary information. 
